@@ -51,10 +51,13 @@ export function ArticlesProvider({ children }) {
     return user ? getArticlesForUser(savedArticlesByUser, user.username) : [];
   };
 
+  const getAllUserArticles = () => savedArticlesByUser;
+
   return (
     <ArticlesContext.Provider 
       value={{ 
         getUserSavedArticles,
+        getAllUserArticles,
         saveArticle, 
         removeArticle, 
         isArticleSaved 
