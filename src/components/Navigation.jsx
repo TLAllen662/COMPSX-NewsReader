@@ -4,8 +4,9 @@ import { useAuth } from '../context/AuthContext';
 
 function Navigation() {
   const location = useLocation();
-  const { savedArticles } = useArticles();
+  const { getUserSavedArticles } = useArticles();
   const { user, logout, isAuthenticated } = useAuth();
+  const savedArticleCount = getUserSavedArticles().length;
 
   return (
     <nav>
@@ -25,12 +26,11 @@ function Navigation() {
             >
               Search
             </Link>
-            {/* ⚠️ SECURITY ISSUE: No authentication required to access saved articles */}
             <Link 
               to="/saved" 
               className={`nav-link ${location.pathname === '/saved' ? 'active' : ''}`}
             >
-              Saved Articles ({savedArticles.length})
+              Saved Articles ({savedArticleCount})
             </Link>
           </div>
         </div>

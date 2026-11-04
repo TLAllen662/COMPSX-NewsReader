@@ -1,34 +1,60 @@
 import React, { createContext, useContext, useState } from 'react';
+import { useAuth } from './AuthContext';
 
-// ⚠️ SECURITY ISSUE: This context is shared globally with no user authentication
-// All users see the same saved articles!
 const ArticlesContext = createContext();
 
+const getArticlesForUser = (articlesByUser, username) => (
+  Object.prototype.hasOwnProperty.call(articlesByUser, username)
+    ? articlesByUser[username]
+    : []
+);
+
 export function ArticlesProvider({ children }) {
-  const [savedArticles, setSavedArticles] = useState([]);
+  const [savedArticlesByUser, setSavedArticlesByUser] = useState({});
+  const { user } = useAuth();
 
   const saveArticle = (article) => {
-    setSavedArticles(prev => {
-      // Check if article is already saved
-      if (prev.find(a => a.url === article.url)) {
-        return prev;
+    if (!user) {
+      return;
+    }
+
+    setSavedArticlesByUser(previous => {
+      const userArticles = getArticlesForUser(previous, user.username);
+      if (userArticles.some(savedArticle => savedArticle.url === article.url)) {
+        return previous;
       }
-      return [...prev, article];
+
+      return {
+        ...previous,
+        [user.username]: [...userArticles, article],
+      };
     });
   };
 
   const removeArticle = (url) => {
-    setSavedArticles(prev => prev.filter(a => a.url !== url));
+    if (!user) {
+      return;
+    }
+
+    setSavedArticlesByUser(previous => ({
+      ...previous,
+      [user.username]: getArticlesForUser(previous, user.username)
+        .filter(article => article.url !== url),
+    }));
   };
 
   const isArticleSaved = (url) => {
-    return savedArticles.some(a => a.url === url);
+    return getUserSavedArticles().some(article => article.url === url);
+  };
+
+  const getUserSavedArticles = () => {
+    return user ? getArticlesForUser(savedArticlesByUser, user.username) : [];
   };
 
   return (
     <ArticlesContext.Provider 
       value={{ 
-        savedArticles, 
+        getUserSavedArticles,
         saveArticle, 
         removeArticle, 
         isArticleSaved 
@@ -39,6 +65,8 @@ export function ArticlesProvider({ children }) {
   );
 };
 
+// Keep the hook alongside its provider; this export is intentionally not a component.
+// eslint-disable-next-line react-refresh/only-export-components
 export const useArticles = () => {
   const context = useContext(ArticlesContext);
   if (!context) {
